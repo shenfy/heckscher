@@ -37,15 +37,19 @@ class SelectedVertsPanel(bpy.types.Panel):
 
         row = layout.row()
         row.label(text="Count: {}".format(len(indices)))
-        
+
         text = ' '.join([str(vid) for vid in indices])
         wrapper = textwrap.TextWrapper(width=40)
         text = wrapper.wrap(text=text)
 
-        for line in text:
+        for idx, line in enumerate(text):
             row = layout.row(align=True)
             row.alignment = 'EXPAND'
-            row.label(text=line)
+            if idx >= 8:
+                row.label(text='... (too many to display)')
+                break
+            else:
+                row.label(text=line)
 
         row = layout.row()
         button = row.operator(CopySelectedVertsOperator.bl_idname, text='Copy to Clipboard', icon='COPYDOWN')
