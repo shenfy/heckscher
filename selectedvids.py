@@ -12,31 +12,38 @@ def get_selected_verts(obj) -> list[int]:
     return indices
 
 class VertexSelectionPropertyGroup(bpy.types.PropertyGroup):
-    vert_2_select: bpy.props.IntProperty(name='VID to Select')
+    verts_2_select: bpy.props.StringProperty(name='VIDs to Select')
 
 class CopySelectedVertsOperator(bpy.types.Operator):
+    """Copy the list of selected vertex indices to clipboard."""
     bl_idname = 'heckscher.sel_vert_clipboard'
     bl_label = 'Copy Selected VIDs to Clipboard'
 
     content: bpy.props.StringProperty(default='')
-    
+
     def execute(self, context):
         context.window_manager.clipboard = str(self.content)
         return {'FINISHED'}
 
-class SelectVertsByIdOperator(bpy.types.Operator):
-    bl_idname = 'heckscher.sel_vert_by_id'
-    bl_label = 'Select Vertices of the Given Id'
+class SelectVerticesByIdOperator(bpy.types.Operator):
+    """Select all vertices whose index is in the given comma separated list."""
+
+    bl_idname = 'heckscher.sel_verts_by_id'
+    bl_label = 'Select Vertices in the Given Id List'
 
     def execute(self, context):
         obj = context.object
-        selected_id = obj.vertex_selection_prop_grp.vert_2_select
+        vids_str = obj.vertex_selection_prop_grp.verts_2_select
+        vids_str = ''.join(filter(lambda x: x not in ['[', ']', '\t'], vids_str))
+        vids = set([int(v) for v in filter(lambda x: len(x) != 0, vids_str.split(','))])
+        print(vids)
+
         for poly in obj.data.polygons:
             poly.select = False
         for edge in obj.data.edges:
             edge.select = False
         for idx, v in enumerate(obj.data.vertices):
-            v.select = True if idx == selected_id else False
+            v.select = True if idx in vids else False
         return {'FINISHED'}
 
 class SelectedVertsPanel(bpy.types.Panel):
@@ -51,13 +58,13 @@ class SelectedVertsPanel(bpy.types.Panel):
         layout = self.layout
 
         obj = context.object
-        indices = get_selected_verts(obj)        
+        indices = get_selected_verts(obj)
 
         enable_action = bpy.context.object.mode == 'OBJECT'
 
         selected_count = len(indices)
         row = layout.row()
-        row.label(text='Selected: {} vertices'.format(selected_count))
+        row.label(text='Selected vertex count: {}'.format(selected_count))
         row.enabled = enable_action
 
         text = ' '.join([str(vid) for vid in indices])
@@ -81,25 +88,22 @@ class SelectedVertsPanel(bpy.types.Panel):
         row.enabled = enable_action
 
         row = layout.row()
-        row.label(text='To Select:')
+        row.label(text='Select Vertices by Index:')
         row.enabled = enable_action
 
         row = layout.row()
-        col = row.column()
-        col.label(text='VID:')
-        col = row.column()
-        col.prop(obj.vertex_selection_prop_grp, 'vert_2_select', text='')
+        row.prop(obj.vertex_selection_prop_grp, 'verts_2_select', text='')
         row.enabled = enable_action
 
         row = layout.row()
-        button = row.operator(SelectVertsByIdOperator.bl_idname,
-            text='Select Vertex', icon='SELECT_SET')
+        button = row.operator(SelectVerticesByIdOperator.bl_idname,
+            text='Select Multiple Vertices', icon='SELECT_SET')
         row.enabled = enable_action
 
 
 def register():
     bpy.utils.register_class(CopySelectedVertsOperator)
-    bpy.utils.register_class(SelectVertsByIdOperator)
+    bpy.utils.register_class(SelectVerticesByIdOperator)
     bpy.utils.register_class(SelectedVertsPanel)
     bpy.utils.register_class(VertexSelectionPropertyGroup)
     bpy.types.Object.vertex_selection_prop_grp =\
@@ -108,9 +112,9 @@ def register():
 def unregister():
     del bpy.types.Object.vertex_selection_prop_grp
     bpy.utils.unregister_class(CopySelectedVertsOperator)
-    bpy.utils.unregister_class(SelectVertsByIdOperator)
+    bpy.utils.unregister_class(SelectVerticesByIdOperator)
     bpy.utils.unregister_class(SelectedVertsPanel)
     bpy.utils.unregister_class(VertexSelectionPropertyGroup)
-    
+
 if __name__ == "__main__":
     register()
