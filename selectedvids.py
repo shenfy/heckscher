@@ -4,11 +4,15 @@ bl_info = {
     "category": "Object",
 }
 
-import bpy
+import bpy, bmesh
 import textwrap
 
-def get_selected_verts(obj) -> list[int]:
-    indices = [v.index for v in obj.data.vertices if v.select]
+def get_selected_verts(obj_data, is_edit_mode) -> list[int]:
+    if is_edit_mode:
+        edit_mesh = bmesh.from_edit_mesh(obj_data)
+        indices = [v.index for v in edit_mesh.verts if v.select]
+    else:
+        indices = [v.index for v in obj_data.vertices if v.select]
     return indices
 
 class VertexSelectionPropertyGroup(bpy.types.PropertyGroup):
@@ -36,14 +40,26 @@ class SelectVerticesByIdOperator(bpy.types.Operator):
         vids_str = obj.vertex_selection_prop_grp.verts_2_select
         vids_str = ''.join(filter(lambda x: x not in ['[', ']', '\t'], vids_str))
         vids = set([int(v) for v in filter(lambda x: len(x) != 0, vids_str.split(','))])
-        print(vids)
 
-        for poly in obj.data.polygons:
-            poly.select = False
-        for edge in obj.data.edges:
-            edge.select = False
-        for idx, v in enumerate(obj.data.vertices):
-            v.select = True if idx in vids else False
+        if obj.mode == 'EDIT':
+            edit_mesh = bmesh.from_edit_mesh(obj.data)
+            for face in edit_mesh.faces:
+                face.select = False
+            for edge in edit_mesh.edges:
+                edge.select = False
+            for idx, v in enumerate(edit_mesh.verts):
+                v.select_set(True if idx in vids else False)
+            edit_mesh.select_flush(True)
+            bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.mode_set(mode='EDIT')
+        else:
+            for poly in obj.data.polygons:
+                poly.select = False
+            for edge in obj.data.edges:
+                edge.select = False
+            for idx, v in enumerate(obj.data.vertices):
+                v.select = True if idx in vids else False
         return {'FINISHED'}
 
 class SelectedVertsPanel(bpy.types.Panel):
@@ -57,15 +73,14 @@ class SelectedVertsPanel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
-        obj = context.object
-        indices = get_selected_verts(obj)
+        is_edit_mode = bpy.context.object.mode == 'EDIT'
 
-        enable_action = bpy.context.object.mode == 'OBJECT'
+        obj = context.object
+        indices = get_selected_verts(obj.data, is_edit_mode)
 
         selected_count = len(indices)
         row = layout.row()
         row.label(text='Selected vertex count: {}'.format(selected_count))
-        row.enabled = enable_action
 
         text = ' '.join([str(vid) for vid in indices])
         wrapper = textwrap.TextWrapper(width=40)
@@ -74,7 +89,6 @@ class SelectedVertsPanel(bpy.types.Panel):
         for idx, line in enumerate(text):
             row = layout.row(align=True)
             row.alignment = 'EXPAND'
-            row.enabled = enable_action
             if idx >= 6:
                 row.label(text='... (too many to display)')
                 break
@@ -85,20 +99,16 @@ class SelectedVertsPanel(bpy.types.Panel):
         button = row.operator(CopySelectedVertsOperator.bl_idname,
             text='Copy to Clipboard', icon='COPYDOWN')
         button.content = str(indices)
-        row.enabled = enable_action
 
         row = layout.row()
         row.label(text='Select Vertices by Index:')
-        row.enabled = enable_action
 
         row = layout.row()
         row.prop(obj.vertex_selection_prop_grp, 'verts_2_select', text='')
-        row.enabled = enable_action
 
         row = layout.row()
         button = row.operator(SelectVerticesByIdOperator.bl_idname,
             text='Select Multiple Vertices', icon='SELECT_SET')
-        row.enabled = enable_action
 
 
 def register():
