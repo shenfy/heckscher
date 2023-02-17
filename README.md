@@ -3,7 +3,7 @@ Blender add-ons and tools for geometry processing.
 
 | Addon | Dir/Filename |
 | ------ | -------- |
-| Select Elements | selectelements/selectel.py |
+| Select Elements | selectel.py |
 | PLY Exporter | ply (dir) |
 
 ## Installation
