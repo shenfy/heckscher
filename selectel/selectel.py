@@ -1,7 +1,11 @@
 bl_info = {
-    "name": "Vertex Selection",
+    "name": "Element Selection",
+    "author": "Fangyang Shen",
+    "version": (0, 1, 0),
     "blender": (3, 0, 0),
-    "category": "Object",
+    "description": "Show selected or select vertices and faces",
+    "support": "unofficial",
+    "category": "Object"
 }
 
 import bpy, bmesh
