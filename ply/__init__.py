@@ -5,8 +5,7 @@ bl_info = {
     "blender": (3, 0, 0),
     "location": "File > Export",
     "description": "Export PLY mesh while preserving vertex order",
-    "support": "unofficial",
-    "category": "Import-Export"
+    "category": "Import-Export",
 }
 
 if "bpy" in locals():

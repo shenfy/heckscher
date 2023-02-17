@@ -4,8 +4,7 @@ bl_info = {
     "version": (0, 1, 0),
     "blender": (3, 0, 0),
     "description": "Show selected or select vertices and faces",
-    "support": "unofficial",
-    "category": "Object"
+    "category": "Object",
 }
 
 import bpy, bmesh
@@ -89,9 +88,9 @@ class SelectElementsByIdOperator(bpy.types.Operator):
                     v.select = True if idx in id_set else False
         return {'FINISHED'}
 
-class SelectedVertsPanel(bpy.types.Panel):
+class selectedElementsPanel(bpy.types.Panel):
     """Creates a Panel in the Object properties window"""
-    bl_label = "Selected Vertices"
+    bl_label = "Selected Elements"
     bl_idname = "heckscher.sel_vert_panel"
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
@@ -146,7 +145,7 @@ class SelectedVertsPanel(bpy.types.Panel):
 def register():
     bpy.utils.register_class(CopySelectedElementsOperator)
     bpy.utils.register_class(SelectElementsByIdOperator)
-    bpy.utils.register_class(SelectedVertsPanel)
+    bpy.utils.register_class(selectedElementsPanel)
     bpy.utils.register_class(ElementSelectionPropertyGroup)
     bpy.types.Object.vertex_selection_prop_grp =\
         bpy.props.PointerProperty(type=ElementSelectionPropertyGroup)
@@ -155,7 +154,7 @@ def unregister():
     del bpy.types.Object.vertex_selection_prop_grp
     bpy.utils.unregister_class(CopySelectedElementsOperator)
     bpy.utils.unregister_class(SelectElementsByIdOperator)
-    bpy.utils.unregister_class(SelectedVertsPanel)
+    bpy.utils.unregister_class(selectedElementsPanel)
     bpy.utils.unregister_class(ElementSelectionPropertyGroup)
 
 if __name__ == "__main__":
