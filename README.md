@@ -1,22 +1,22 @@
 # heckscher
 Blender add-ons and tools for geometry processing.
 
-| Addon | Dir/Filename |
+| Addon Names | Dir/Filename |
 | ------ | -------- |
 | Select Elements | selectel.py |
-| PLY Exporter | ply (dir) |
+| Heckscher PLY Exporter | ply (dir) |
 
 ## Installation
 ### Method 1
-Create zip of the subfolder or file of the addon you would like to install, then use the Blender GUI menu Edit > Preferences > Add-ons > Install... to install individual addons.
+Create zip of the subfolder or file of the addon you would like to install, then use the Blender GUI menu **Edit > Preferences > Add-ons > Install...** to install individual addons.
 
 The release section in this repository may also contain packaged files you can download and install.
 
 ### Method 2
-Add a user-defined add-on path in Blender.
-Point the Edit > Preferences > File Paths > Scripts to the root folder of your clone of this repository.
+Simply copy the subfolders or files of the add-on in this repository into your script folder.
 
-If you already have a script folder set in Blender, simply copy the subfolders or files of the add-on in this repository into your script folder.
+Under Linux, it is something like `/home/{username}/.config/blender/3.1/scripts/addons/`
 
-Save the preferences and restart Blender to load the new add-ons.
-Enable the ones you'd like to use under Edit > Preferences > Add-ons.
+Under Windows, it is something like `C:\Users\{username}\AppData\Roaming\Blender Foundation\Blender\3.1\scripts\addons\`, or equivalently `%AppData%\Blender Foundation\Blender\3.1\scripts\addons\`
+
+Then find and enable them in **Edit > Preferences > Add-ons** by searching the corresponding addon names as listed above.

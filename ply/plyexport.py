@@ -13,6 +13,12 @@ class HeckscherPLYExport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
 
     filter_glob: bpy.props.StringProperty(default='*.ply', options={'HIDDEN'})
 
+    use_ascii: bpy.props.BoolProperty(
+        name="ASCII",
+        description="Export ASCII instead of binary",
+        default=False
+    )
+
     use_normals: bpy.props.BoolProperty(
         name="Normals",
         description="Export vertex normals",
@@ -89,7 +95,7 @@ class HeckscherPLYExport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
 
             F.append(fvids)
 
-        saveply.write_ply(self.filepath, V, F, C, N, ST)
+        saveply.write_ply(self.filepath, V, F, C, N, ST, self.use_ascii)
 
         return {'FINISHED'}
 
