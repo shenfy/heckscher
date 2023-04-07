@@ -1,16 +1,22 @@
 # heckscher
 Blender add-ons and tools for geometry processing.
 
-| Addon Names | Dir/Filename |
-| ------ | -------- |
-| Select Elements | selectel.py |
-| Heckscher PLY Exporter | ply (dir) |
+| Addon Names | Dir/Filename | Description |
+| ------ | -------- | ------- |
+| Select Elements | selectel.py | Selected element (vertex/face) <-> Index list |
+| PLY Exporter | ply (dir) | Write PLY: preserves vertex order, select color attribute |
 
 ## Installation
 ### Method 1
-Create zip of the subfolder or file of the addon you would like to install, then use the Blender GUI menu **Edit > Preferences > Add-ons > Install...** to install individual addons.
-
+- Create zip of the subfolder or file of the addon you would like to install.
+Under Linux, use the package.sh to create zip archives under the `release` folder .
+```bash
+$ sudo apt install -y zip
+$ bash package.sh
+```
 The release section in this repository may also contain packaged files you can download and install.
+
+- Use the Blender GUI menu **Edit > Preferences > Add-ons > Install...** to install individual addons.
 
 ### Method 2
 Simply copy the subfolders or files of the add-on in this repository into your script folder.
