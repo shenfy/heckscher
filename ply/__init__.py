@@ -2,7 +2,7 @@ bl_info = {
     "name": "Heckscher PLY Exporter",
     "author": "Fangyang Shen",
     "version": (0, 1, 0),
-    "blender": (3, 0, 0),
+    "blender": (3, 4, 0),
     "location": "File > Export",
     "description": "Export PLY mesh while preserving vertex order",
     "category": "Import-Export",

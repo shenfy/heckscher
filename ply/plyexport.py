@@ -31,10 +31,17 @@ class HeckscherPLYExport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         default=False
     )
 
+    use_color_attr: bpy.props.StringProperty(
+        name='Color Attribute',
+        description='Name of the color attribute to export',
+        default=''
+    )
+
     use_uvs: bpy.props.BoolProperty(
         name='Tex Coords',
         description='Export texture coordinates',
-        default=False)
+        default=False
+    )
 
     def execute(self, context):
         if bpy.ops.object.mode_set.poll():
@@ -69,10 +76,16 @@ class HeckscherPLYExport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                 N.append([n.vector.x, n.vector.y, n.vector.z])
 
         C = None
-        use_colors = self.use_colors and len(tmp_mesh.vertex_colors) > 0
+        use_colors = self.use_colors and (self.use_color_attr in tmp_mesh.color_attributes)
         if use_colors:
-            col_layer = tmp_mesh.vertex_colors.active
+            col_attr = tmp_mesh.color_attributes[self.use_color_attr]
+            col_domain = col_attr.domain
             C = [[0, 0, 0] for _ in range(num_verts)]
+
+            if col_domain == 'POINT':
+                for vid in range(len(tmp_mesh.vertices)):
+                    C[vid] = [int(c * 255) for c in col_attr.data[vid].color[:-1]]
+
 
         ST = None
         use_uvs = self.use_uvs and len(tmp_mesh.uv_layers) > 0
@@ -87,8 +100,8 @@ class HeckscherPLYExport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                 vid = tmp_mesh.loops[lid].vertex_index
                 fvids.append(vid)
 
-                if use_colors:
-                    C[vid] = [int(c * 255) for c in col_layer.data[lid].color[:-1]]
+                if use_colors and col_domain == 'CORNER':
+                    C[vid] = [int(c * 255) for c in col_attr.data[lid].color[:-1]]
 
                 if use_uvs:
                     ST[vid] = [st for st in uv_layer.data[lid].uv]
