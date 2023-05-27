@@ -31,9 +31,16 @@ class HeckscherPLYExport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
         default=False
     )
 
+    use_color_source: bpy.props.EnumProperty(
+        items=(('color', 'Color', 'Vertex Color'),
+               ('weight', 'Weight', 'Vertex Weight')),
+        name='Source',
+        description='Source of vertex color'
+    )
+
     use_color_attr: bpy.props.StringProperty(
-        name='Color Attribute',
-        description='Name of the color attribute to export',
+        name='Name',
+        description='Name of the color attribute/vertex group to export',
         default=''
     )
 
@@ -76,16 +83,34 @@ class HeckscherPLYExport(bpy.types.Operator, bpy_extras.io_utils.ExportHelper):
                 N.append([n.vector.x, n.vector.y, n.vector.z])
 
         C = None
-        use_colors = self.use_colors and (self.use_color_attr in tmp_mesh.color_attributes)
-        if use_colors:
-            col_attr = tmp_mesh.color_attributes[self.use_color_attr]
-            col_domain = col_attr.domain
-            C = [[0, 0, 0] for _ in range(num_verts)]
+        use_colors = False
+        if self.use_colors:
+            if self.use_color_source == 'color':
+                if self.use_color_attr in tmp_mesh.color_attributes:
+                    use_colors = True
 
-            if col_domain == 'POINT':
-                for vid in range(len(tmp_mesh.vertices)):
-                    C[vid] = [int(c * 255) for c in col_attr.data[vid].color[:-1]]
+                    col_attr = tmp_mesh.color_attributes[self.use_color_attr]
+                    col_domain = col_attr.domain
+                    C = [[0, 0, 0] for _ in range(num_verts)]
 
+                    if col_domain == 'POINT':
+                        for vid in range(num_verts):
+                            C[vid] = [int(c * 255) for c in col_attr.data[vid].color[:-1]]
+
+            elif self.use_color_source == 'weight':
+                if self.use_color_attr in ob.vertex_groups:
+                    use_colors = True
+
+                    vg = ob.vertex_groups[self.use_color_attr]
+                    col_domain = 'POINT'
+
+                    C = [[0, 0, 0] for _ in range(num_verts)]
+                    for vid in range(num_verts):
+                        try:
+                            weight = vg.weight(vid)
+                            C[vid] = [int(weight * 255), 0, 0]
+                        except:
+                            pass
 
         ST = None
         use_uvs = self.use_uvs and len(tmp_mesh.uv_layers) > 0
