@@ -40,6 +40,56 @@ class CopySelectedElementsOperator(bpy.types.Operator):
         context.window_manager.clipboard = str(self.content)
         return {'FINISHED'}
 
+def parse_ids_str(ids_str: str) -> set[int]:
+    """Parse string to set of integer ids."""
+    for char in ['[', ']', ',', '\t', '\n']:
+        ids_str = ids_str.replace(char, ' ')
+    return {int(v) for v in ids_str.split()}
+
+def select_elements_by_ids(context, ids_str: str) -> bool:
+    """Select elements based on parsed ids_str."""
+    try:
+        id_set = parse_ids_str(ids_str)
+    except ValueError:
+        return False
+    
+    select_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)  # (v, e, f)
+    obj = context.object
+
+    if obj.mode == 'EDIT':
+        edit_mesh = bmesh.from_edit_mesh(obj.data)
+        for edge in edit_mesh.edges:
+            edge.select = False
+        if select_mode[2]:  # select face
+            for v in edit_mesh.verts:
+                v.select = False
+            for idx, face in enumerate(edit_mesh.faces):
+                face.select_set(True if idx in id_set else False)
+        else:  # select verts
+            for face in edit_mesh.faces:
+                face.select = False
+            for idx, v in enumerate(edit_mesh.verts):
+                v.select_set(True if idx in id_set else False)
+
+        edit_mesh.select_flush(True)
+        bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.mode_set(mode='EDIT')
+    else:
+        for edge in obj.data.edges:
+            edge.select = False
+        if select_mode[2]:  # select face
+            for v in obj.data.vertices:
+                v.select = False
+            for idx, poly in enumerate(obj.data.polygons):
+                poly.select = True if idx in id_set else False
+        else:  # select vertex
+            for poly in obj.data.polygons:
+                poly.select = False
+            for idx, v in enumerate(obj.data.vertices):
+                v.select = True if idx in id_set else False
+    return True
+
 class SelectElementsByIdOperator(bpy.types.Operator):
     """Select all vertices whose index is in the given comma separated list."""
 
@@ -47,45 +97,24 @@ class SelectElementsByIdOperator(bpy.types.Operator):
     bl_label = 'Select Vertices in the Given Id List'
 
     def execute(self, context):
-        select_mode = tuple(bpy.context.scene.tool_settings.mesh_select_mode)  # (v, e, f)
-
         obj = context.object
         ids_str = obj.vertex_selection_prop_grp.elements_2_select
-        ids_str = ''.join(filter(lambda x: x not in ['[', ']', '\t'], ids_str))
-        id_set = set([int(v) for v in filter(lambda x: len(x) != 0, ids_str.split(','))])
+        if not select_elements_by_ids(context, ids_str):
+            self.report({'ERROR'}, "Input does not contain valid integer indices.")
+            return {'CANCELLED'}
+        return {'FINISHED'}
 
-        if obj.mode == 'EDIT':
-            edit_mesh = bmesh.from_edit_mesh(obj.data)
-            for edge in edit_mesh.edges:
-                edge.select = False
-            if select_mode[2]:  # select face
-                for v in edit_mesh.verts:
-                    v.select = False
-                for idx, face in enumerate(edit_mesh.faces):
-                    face.select_set(True if idx in id_set else False)
-            else:  # select verts
-                for face in edit_mesh.faces:
-                    face.select = False
-                for idx, v in enumerate(edit_mesh.verts):
-                    v.select_set(True if idx in id_set else False)
+class SelectElementsByClipboardOperator(bpy.types.Operator):
+    """Select all vertices whose index is in the clipboard."""
 
-            edit_mesh.select_flush(True)
-            bmesh.update_edit_mesh(obj.data, loop_triangles=False, destructive=False)
-            bpy.ops.object.mode_set(mode='OBJECT')
-            bpy.ops.object.mode_set(mode='EDIT')
-        else:
-            for edge in obj.data.edges:
-                edge.select = False
-            if select_mode[2]:  # select face
-                for v in obj.data.vertices:
-                    v.select = False
-                for idx, poly in enumerate(obj.data.polygons):
-                    poly.select = True if idx in id_set else False
-            else:  # select vertex
-                for poly in obj.data.polygons:
-                    poly.select = False
-                for idx, v in enumerate(obj.data.vertices):
-                    v.select = True if idx in id_set else False
+    bl_idname = 'heckscher.sel_verts_by_clipboard'
+    bl_label = 'Select Vertices from Clipboard'
+
+    def execute(self, context):
+        ids_str = context.window_manager.clipboard
+        if not select_elements_by_ids(context, ids_str):
+            self.report({'ERROR'}, "Clipboard does not contain valid integer indices.")
+            return {'CANCELLED'}
         return {'FINISHED'}
 
 class selectedElementsPanel(bpy.types.Panel):
@@ -141,10 +170,15 @@ class selectedElementsPanel(bpy.types.Panel):
         button = row.operator(SelectElementsByIdOperator.bl_idname,
             text='Select {}'.format(select_mode_text), icon='SELECT_SET')
 
+        row = layout.row()
+        button = row.operator(SelectElementsByClipboardOperator.bl_idname,
+            text='Select {} from Clipboard'.format(select_mode_text), icon='PASTEDOWN')
+
 
 def register():
     bpy.utils.register_class(CopySelectedElementsOperator)
     bpy.utils.register_class(SelectElementsByIdOperator)
+    bpy.utils.register_class(SelectElementsByClipboardOperator)
     bpy.utils.register_class(selectedElementsPanel)
     bpy.utils.register_class(ElementSelectionPropertyGroup)
     bpy.types.Object.vertex_selection_prop_grp =\
@@ -154,6 +188,7 @@ def unregister():
     del bpy.types.Object.vertex_selection_prop_grp
     bpy.utils.unregister_class(CopySelectedElementsOperator)
     bpy.utils.unregister_class(SelectElementsByIdOperator)
+    bpy.utils.unregister_class(SelectElementsByClipboardOperator)
     bpy.utils.unregister_class(selectedElementsPanel)
     bpy.utils.unregister_class(ElementSelectionPropertyGroup)
 
